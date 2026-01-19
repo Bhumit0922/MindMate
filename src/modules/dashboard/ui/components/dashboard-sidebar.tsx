@@ -69,7 +69,7 @@ export const DashboardSidebar = () => {
                     )}
                     isActive={pathname === item.href}
                   >
-                    <Link href="item.href">
+                    <Link href={item.href}>
                       <item.icon className="size-5"></item.icon>
                       <span className="text-sm font-medium tracking-tight">
                         {item.label}
@@ -98,7 +98,7 @@ export const DashboardSidebar = () => {
                     )}
                     isActive={pathname === item.href}
                   >
-                    <Link href="item.href">
+                    <Link href={item.href}>
                       <item.icon className="size-5"></item.icon>
                       <span className="text-sm font-medium tracking-tight">
                         {item.label}

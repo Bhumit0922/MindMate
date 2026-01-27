@@ -14,14 +14,15 @@ import {
   AgentsViewLoading,
 } from "@/modules/agents/ui/views/agents-view";
 import type { SearchParams } from "nuqs";
-import { loadSearchParams } from "@/modules/agents/params";
+import { agentsSearchParams } from "@/modules/agents/params";
 
 interface Props {
   searchParams: Promise<SearchParams>;
 }
 
 const Page = async ({ searchParams }: Props) => {
-  const filters = await loadSearchParams(searchParams);
+  const resolvedSearchParams = await searchParams;
+  const filters = agentsSearchParams.parse(resolvedSearchParams);
 
   const session = await auth.api.getSession({
     headers: await headers(),

@@ -60,7 +60,7 @@ export const columns: ColumnDef<MeetingGetMany[number]>[] = [
           <GeneratedAvatar
             variant="botttsNeutral"
             seed={row.original.agent.name}
-            className="size 4"
+            className="size-4"
           />
           <span className="text-sm text-muted-foreground">
             {row.original.startedAt
@@ -79,20 +79,24 @@ export const columns: ColumnDef<MeetingGetMany[number]>[] = [
         statusIconMap[row.original.status as keyof typeof statusIconMap];
 
       return (
-        <Badge
-          variant="outline"
-          className={cn(
-            "capitalize [&>svg] : size-4 text-muted-foreground",
-            statusColorMap[row.original.status as keyof typeof statusColorMap],
-          )}
-        >
-          <Icon
+        <div className="flex justify-center">
+          <Badge
+            variant="outline"
             className={cn(
-              row.original.status === "processing" && "animate-spin",
+              "h-7 px-3 text-xs font-medium whitespace-nowrap capitalize flex items-center gap-x-2 [&>svg]:size-4",
+              statusColorMap[
+                row.original.status as keyof typeof statusColorMap
+              ],
             )}
-          />
-          {row.original.status}
-        </Badge>
+          >
+            <Icon
+              className={cn(
+                row.original.status === "processing" && "animate-spin",
+              )}
+            />
+            {row.original.status}
+          </Badge>
+        </div>
       );
     },
   },
@@ -100,10 +104,17 @@ export const columns: ColumnDef<MeetingGetMany[number]>[] = [
     accessorKey: "duration",
     header: "duration",
     cell: ({ row }) => (
-      <Badge variant="outline" className="capitalize [&>svg] : size-4 flex items-center gap-x-2">
-        <ClockFadingIcon className="text-blue-700"/>
-        {row.original.duration ? formatDuration(row.original.duration) : "No duration"}
-      </Badge>
+      <div className="flex justify-end">
+        <Badge
+          variant="outline"
+          className="h-7 px-3 text-xs font-medium whitespace-nowrap capitalize flex items-center gap-x-2 [&>svg]:size-4"
+        >
+          <ClockFadingIcon className="text-blue-700" />
+          {row.original.duration
+            ? formatDuration(row.original.duration)
+            : "No duration"}
+        </Badge>
+      </div>
     ),
   },
 ];

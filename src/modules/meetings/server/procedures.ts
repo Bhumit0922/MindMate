@@ -29,18 +29,19 @@ export const meetingsRouter = createTRPCRouter({
           generateAvatarUrl({ seed: ctx.auth.user.name, variant: "initials" }),
       },
     ]);
-    // const expirationTime = Math.floor(Date.now() / 1000) y
-
-    // const token = streamVideo.generateUserToken({
-    //   user_id: ctx.auth.user.id,
-    //   exp: expirationTime,
-    //   validity_in_seconds: issuedAt,
-    // });
+    const expirationTime = Math.floor(Date.now() / 1000) + 3600;
+    const issuedAt = Math.floor(Date.now() / 1000) - 60;
 
     const token = streamVideo.generateUserToken({
       user_id: ctx.auth.user.id,
-      exp: Math.floor(Date.now() / 1000) + 60 * 60,
+      exp: expirationTime,
+      validity_in_seconds: issuedAt,
     });
+
+    // const token = streamVideo.generateUserToken({
+    //   user_id: ctx.auth.user.id,
+    //   exp: Math.floor(Date.now() / 1000) + 60 * 60,
+    // });
 
     return token;
   }),

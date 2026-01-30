@@ -35,7 +35,7 @@ export const CallConnect = ({
   const [client, setClient] = useState<StreamVideoClient>();
   //new StreamVideoClient
   useEffect(() => {
-    const _client = StreamVideoClient.getOrCreateInstance({
+    const _client = new StreamVideoClient({
       apiKey: process.env.NEXT_PUBLIC_STREAM_VIDEO_API_KEY!,
       user: {
         id: userId,
@@ -46,6 +46,10 @@ export const CallConnect = ({
     });
     setClient(_client);
 
+    return () => {
+      _client.disconnectUser();
+      setClient(undefined);
+    };
   }, [userId, userName, userImage, generateToken]);
 
   const [call, setCall] = useState<Call>();

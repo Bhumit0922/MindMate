@@ -12,18 +12,11 @@ export const CallUI = ({ meetingName }: Props) => {
   const call = useCall();
   const [show, setShow] = useState<"lobby" | "call" | "ended">("lobby");
 
-  const [joining, setJoining] = useState(false);
   const handleJoin = async () => {
-    if (!call || joining) return;
+    if (!call) return;
 
-    try {
-      setJoining(true);
-      await call.join();
-      setShow("call");
-    } catch (err) {
-      console.error("Join failed:", err);
-      setJoining(false);
-    }
+    await call.join();
+    setShow("call");
   };
 
   const handleLeave = async () => {

@@ -1,14 +1,15 @@
 "use client";
+import { useTRPC } from "@/trpc/client";
+import { useRouter } from "next/navigation";
+import { useSuspenseQuery } from "@tanstack/react-query";
+
+import { useMeetingsFilters } from "../../hooks/use-meetings-filters";
 
 import { DataTable } from "@/components/data-table";
 import { ErrorState } from "@/components/error-state";
 import { LoadingState } from "@/components/loading-state";
-import { useTRPC } from "@/trpc/client";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { columns } from "../components/columns";
 import { EmptyState } from "@/components/empty-state";
-import { useRouter } from "next/navigation";
-import { useMeetingsFilters } from "../../hooks/use-meetings-filters";
 import { DataPagination } from "@/components/data-pagination";
 
 export const MeetingsView = () => {

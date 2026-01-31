@@ -1,17 +1,12 @@
-// src/modules/agents/params.ts
-import {
-  createLoader,
-  parseAsInteger,
-  parseAsString,
-} from "nuqs/server";
-
+import { createLoader, parseAsInteger, parseAsString } from "nuqs/server";
 import { DEFAULT_PAGE } from "@/constanst";
 
-export const filtersSearchParams = ({
-  search: parseAsString.withDefault("").withOptions({ clearOnDefault: true }),
+export const agentsSearchParams = createLoader({
+  search: parseAsString
+    .withDefault("")
+    .withOptions({ clearOnDefault: true }),
+
   page: parseAsInteger
     .withDefault(DEFAULT_PAGE)
     .withOptions({ clearOnDefault: true }),
 });
-
-export const loadSearchParams = createLoader(filtersSearchParams)

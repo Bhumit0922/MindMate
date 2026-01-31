@@ -77,7 +77,7 @@ export const CallLobby = ({ onJoin }: Props) => {
             <Button asChild variant="ghost">
               <Link href="/meetings">Cancel</Link>
             </Button>
-            <Button onClick={onJoin}>
+            <Button onClick={onJoin} disabled={!hasBrowserMediaPermission}>
               <LogInIcon />
               Join Call
             </Button>

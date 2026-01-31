@@ -22,7 +22,7 @@ interface Props {
 
 const Page = async ({ searchParams }: Props) => {
   const resolvedSearchParams = await searchParams;
-  const filters = agentsSearchParams.parse(resolvedSearchParams);
+  const filters = agentsSearchParams(resolvedSearchParams);
 
   const session = await auth.api.getSession({
     headers: await headers(),

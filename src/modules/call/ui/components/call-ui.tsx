@@ -13,14 +13,22 @@ export const CallUI = ({ meetingName }: Props) => {
   const [show, setShow] = useState<"lobby" | "call" | "ended">("lobby");
 
   const handleJoin = async () => {
-    if (!call) return;
+  if (!call) return;
 
-    await call.join();
+  // ✅ Guard: join only if idle
+  if (call.state.callingState !== "idle") return;
+
+  try {
+    await call.join({ create: true });
     setShow("call");
-  };
+  } catch (err) {
+    console.error("Join failed", err);
+  }
+};
+
 
   const handleLeave = async () => {
-    if (!call) return;
+    if (!call) {return}
 
     call.endCall();
     setShow("ended");

@@ -10,7 +10,6 @@ const summarizer = createAgent({
   name: "summarizer",
   system:
     `You are an expert summarizer. You write readable, concise, simple content. You are given a transcript of a meeting and you need to summarize it.
-
 Use the following markdown structure for every output:
 
 ### Overview
@@ -29,7 +28,7 @@ Example:
 - Feature X automatically does Y
 - Mention of integration with Z`.trim(),
   model: openai({
-    model: "chatgpt-4o-latest",
+    model: "chatgpt-4o-mini",
     apiKey: process.env.OPENAI_API_KEY,
   }),
 });
@@ -38,12 +37,29 @@ export const meetingsProcessing = inngest.createFunction(
   { id: "meetings/processing" },
   { event: "meetings/processing" },
   async ({ event, step }) => {
+    // const response = await step.run("fetch-transcript", async () => {
+    //   return fetch(event.data.transcriptUrl).then((res) => res.text());
+    // });
     const response = await step.run("fetch-transcript", async () => {
-      return fetch(event.data.transcriptUrl).then((res) => res.text());
+      const res = await fetch(event.data.transcriptUrl);
+      if (!res.ok) {
+        throw new Error(`Transcript fetch failed: ${res.status}`);
+      }
+      return res.text();
     });
+
+    // const transcript = await step.run("parse-transcript", async () => {
+    //   return JSONL.parse<StreamTranscriptItem>(response);
+    // });
     const transcript = await step.run("parse-transcript", async () => {
-      return JSONL.parse<StreamTranscriptItem>(response);
+      try {
+        return JSONL.parse<StreamTranscriptItem>(response);
+      } catch (err) {
+        console.error("JSONL parse failed", err);
+        throw err;
+      }
     });
+
     const transcriptWithSpeakers = await step.run("add-speakers", async () => {
       const speakerIds = [
         ...new Set(transcript.map((item) => item.speaker_id)),
@@ -85,15 +101,36 @@ export const meetingsProcessing = inngest.createFunction(
       });
     });
 
-    const { output } = await summarizer.run(
-      "Summarize the following transcript: " +
-        JSON.stringify(transcriptWithSpeakers),
-    );
+    // const { output } = await summarizer.run(
+    //   "Summarize the following transcript: " +
+    //     JSON.stringify(transcriptWithSpeakers),
+    // );
+    let summary = "";
+
+    try {
+      const { output } = await summarizer.run(
+        "Summarize the following transcript: " +
+          JSON.stringify(transcriptWithSpeakers),
+      );
+
+      summary = (output[0] as TextMessage).content as string;
+    } catch (err) {
+      console.error("Summarization failed", err);
+
+      // 👇 IMPORTANT: mark meeting as failed
+      await db
+        .update(meetings)
+        .set({ status: "cancelled" })
+        .where(eq(meetings.id, event.data.meetingId));
+
+      throw err;
+    }
+
     await step.run("save-summary", async () => {
       await db
         .update(meetings)
         .set({
-          summary: (output[0] as TextMessage).content as string,
+          summary,
           status: "completed",
         })
         .where(eq(meetings.id, event.data.meetingId));

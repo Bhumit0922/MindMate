@@ -18,6 +18,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DashboardUserButton } from "./dashboard-userbutton";
+import { DashboardTrial } from "./dashboard-trial";
 
 const firstSection = [
   {
@@ -113,7 +114,10 @@ export const DashboardSidebar = () => {
       </SidebarContent>
 
       <SidebarFooter className="text-white">
-        <DashboardUserButton />
+        <div className="p-2">
+          <DashboardTrial />
+          <DashboardUserButton />
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

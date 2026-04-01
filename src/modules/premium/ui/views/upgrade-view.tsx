@@ -14,6 +14,7 @@ export const UpgradeView = () => {
   const { data: currentSubscription } = useSuspenseQuery(
     trpc.premium.getCurrentSubscription.queryOptions(),
   );
+
   return (
     <div className="flex-1 py-4 px-4 md:py-4 md:px-8 flex flex-col gap-y-10">
       <div className="mt-4 flex-1 flex flex-col gap-y-10 items-center">
@@ -23,6 +24,7 @@ export const UpgradeView = () => {
             {currentSubscription?.name ?? "Free"}
           </span>{" "}
         </h5>
+
         <div className="grid grid-col-1 md:grid-cols-3 gap-4">
           {products.map((product) => {
             const isCurrentProduct = currentSubscription?.id === product.id;
@@ -38,6 +40,10 @@ export const UpgradeView = () => {
               buttonText = "Change Plan";
               onClick = () => authClient.customer.portal();
             }
+
+            // ✅ FIX 1: store price once (clean + safe)
+            const price = product.prices[0];
+
             return (
               <PricingCard
                 key={product.id}
@@ -50,12 +56,14 @@ export const UpgradeView = () => {
                 }
                 title={product.name}
                 price={
-                  product.prices[0].amountType === "fixed"
-                    ? product.prices[0].priceAmount / 100
-                    : 0
+                  price.amountType === "fixed" ? price.priceAmount / 100 : 0
                 }
                 description={product.description}
-                priceSuffix={`/${product.prices[0].recurringInterval}`}
+                priceSuffix={
+                  "recurringInterval" in price
+                    ? `/${price.recurringInterval}`
+                    : ""
+                }
                 features={product.benefits.map(
                   (benefit) => benefit.description,
                 )}
@@ -71,7 +79,7 @@ export const UpgradeView = () => {
 
 export const UpgradeViewLoading = () => {
   return (
-    <LoadingState title="Loading" description="THis may take a few seconds" />
+    <LoadingState title="Loading" description="This may take a few seconds" />
   );
 };
 

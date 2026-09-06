@@ -20,6 +20,7 @@ import {
   protectedProcedure,
 } from "@/trpc/init";
 import { generateAvatarUrl } from "@/lib/avatar";
+import { getAIFallbackCompletion } from "@/lib/ai-fallback";
 import { streamVideo } from "@/lib/stream-video";
 import {
   DEFAULT_PAGE,
@@ -409,5 +410,71 @@ This meeting was conducted with AI Agent **${existingMeeting.agentName || "Assis
         .returning();
 
       return updated;
+    }),
+
+  askInCallTutor: protectedProcedure
+    .input(
+      z.object({
+        meetingId: z.string(),
+        message: z.string().min(1),
+        history: z
+          .array(
+            z.object({
+              role: z.enum(["user", "assistant", "system"]),
+              content: z.string(),
+            }),
+          )
+          .optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const [existingMeeting] = await db
+        .select({
+          id: meetings.id,
+          name: meetings.name,
+          agentId: meetings.agentId,
+          agentName: agents.name,
+          instructions: agents.instructions,
+        })
+        .from(meetings)
+        .leftJoin(agents, eq(meetings.agentId, agents.id))
+        .where(
+          and(eq(meetings.id, input.meetingId), eq(meetings.userId, ctx.auth.user.id)),
+        );
+
+      if (!existingMeeting) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Meeting not found" });
+      }
+
+      const agentName = existingMeeting.agentName || "AI Tutor";
+      const systemPrompt = `You are ${agentName}, an interactive AI tutor conducting a live video call session with the user.
+Your personality and expertise guidelines:
+${existingMeeting.instructions || "You are an encouraging, expert tutor who explains concepts clearly and concisely."}
+
+IMPORTANT LIVE CALL SPOKEN GUIDELINES:
+- Keep your answers concise, engaging, and conversational (typically 2 to 4 sentences).
+- Do not use markdown headers, asterisks, or bullet points because this will be spoken aloud via text-to-speech.
+- Be friendly and directly address the user's question.`;
+
+      const messages = [
+        { role: "system" as const, content: systemPrompt },
+        ...(input.history || []).slice(-6).map((m) => ({
+          role: m.role as "user" | "assistant" | "system",
+          content: m.content,
+        })),
+        { role: "user" as const, content: input.message },
+      ];
+
+      const aiResult = await getAIFallbackCompletion({
+        messages,
+        maxTokens: 300,
+        temperature: 0.7,
+      });
+
+      return {
+        reply: aiResult.content,
+        agentName,
+        provider: aiResult.provider,
+      };
     }),
 });

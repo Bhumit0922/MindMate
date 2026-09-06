@@ -22,6 +22,15 @@ function verifySignatureWithSDK(body: string, signature: string): boolean {
   return streamVideo.verifyWebhook(body, signature);
 }
 
+export async function GET() {
+  return NextResponse.json({
+    status: "ok",
+    message: "MindMate Webhook endpoint is healthy",
+    activeProviders: ["Groq", "Google Gemini"],
+    timestamp: new Date().toISOString(),
+  });
+}
+
 export async function POST(req: NextRequest) {
   const signature = req.headers.get("x-signature");
   const apiKey = req.headers.get("x-api-key");

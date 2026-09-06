@@ -100,6 +100,8 @@ export async function getAIFallbackCompletion({
       const client = new OpenAI({
         apiKey: provider.apiKey,
         baseURL: provider.baseURL,
+        timeout: 12000, // 12-second timeout per provider to prevent hanging
+        maxRetries: 1,
       });
 
       const response = await client.chat.completions.create({

@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { ErrorState } from "@/components/error-state";
 import { LoadingState } from "@/components/loading-state";
 import { authClient } from "@/lib/auth-client";
@@ -7,11 +8,20 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { PricingCard } from "../components/pricing-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, ShieldCheck, Zap, HelpCircle, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Sparkles, ShieldCheck, Zap, HelpCircle, CheckCircle2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 export const UpgradeView = () => {
   const trpc = useTRPC();
+  const [showSetupDialog, setShowSetupDialog] = useState(false);
 
   const { data: products } = useSuspenseQuery(
     trpc.premium.getProduct.queryOptions(),
@@ -31,7 +41,7 @@ export const UpgradeView = () => {
         authClient.checkout({ products: [polarProProduct.id] });
       }
     } else {
-      toast.info("Polar billing is connected. Create recurring subscription products in your Polar dashboard to activate direct checkout.");
+      setShowSetupDialog(true);
     }
   };
 
@@ -240,6 +250,37 @@ export const UpgradeView = () => {
           </Card>
         </div>
       </div>
+
+      {/* Polar Billing Setup Dialog */}
+      <Dialog open={showSetupDialog} onOpenChange={setShowSetupDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Polar Billing Setup
+            </DialogTitle>
+            <DialogDescription className="text-sm pt-2 text-muted-foreground leading-relaxed">
+              Your Polar account is connected, but you haven&apos;t created any recurring subscription products yet in your Polar dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-3 text-sm">
+            <div className="rounded-lg bg-muted p-4 space-y-2 text-xs">
+              <p className="font-semibold text-foreground">How to activate 1-click checkouts:</p>
+              <ol className="list-decimal pl-4 space-y-1 text-muted-foreground">
+                <li>Go to your <strong>Polar.sh Dashboard</strong>.</li>
+                <li>Navigate to <strong>Products</strong> &rarr; <strong>New Product</strong>.</li>
+                <li>Set pricing type to <strong>Recurring (Subscription)</strong> (e.g. $19/month).</li>
+                <li>Save the product. The Upgrade button will immediately connect to it!</li>
+              </ol>
+            </div>
+            <Button asChild className="w-full gap-2">
+              <a href="https://polar.sh/dashboard/products" target="_blank" rel="noopener noreferrer">
+                Open Polar Dashboard <ExternalLink className="h-4 w-4" />
+              </a>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,5 +1,7 @@
 import { StreamTheme, useCall } from "@stream-io/video-react-sdk";
 import { useState } from "react";
+import { useTRPC } from "@/trpc/client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CallLobby } from "./call-lobby";
 import { CallActive } from "./call-active";
 import { CallEnded } from "./call-ended";
@@ -10,27 +12,47 @@ interface Props {
 
 export const CallUI = ({ meetingName }: Props) => {
   const call = useCall();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const [show, setShow] = useState<"lobby" | "call" | "ended">("lobby");
 
+  const { mutate: startCallMutation } = useMutation(
+    trpc.meetings.startCall.mutationOptions(),
+  );
+
+  const { mutate: endCallMutation } = useMutation(
+    trpc.meetings.endCall.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries(trpc.meetings.getMany.queryOptions({}));
+        queryClient.invalidateQueries(trpc.premium.getFreeUsage.queryOptions());
+      },
+    }),
+  );
+
   const handleJoin = async () => {
-  if (!call) return;
+    if (!call) return;
 
-  // ✅ Guard: join only if idle
-  if (call.state.callingState !== "idle") return;
+    // ✅ Guard: join only if idle
+    if (call.state.callingState !== "idle") return;
 
-  try {
-    await call.join({ create: true });
-    setShow("call");
-  } catch (err) {
-    console.error("Join failed", err);
-  }
-};
-
+    try {
+      await call.join({ create: true });
+      setShow("call");
+      startCallMutation({ id: call.id });
+    } catch (err) {
+      console.error("Join failed", err);
+    }
+  };
 
   const handleLeave = async () => {
-    if (!call) {return}
+    if (!call) return;
 
-    call.endCall();
+    try {
+      await call.endCall();
+    } catch (err) {
+      console.error("End call failed", err);
+    }
+    endCallMutation({ id: call.id });
     setShow("ended");
   };
 

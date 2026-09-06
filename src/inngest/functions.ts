@@ -5,11 +5,9 @@ import { StreamTranscriptItem } from "@/modules/meetings/types";
 import { eq, inArray } from "drizzle-orm";
 import { createAgent, openai, TextMessage } from "@inngest/agent-kit";
 import JSONL from "jsonl-parse-stringify";
+import { getAIFallbackCompletion } from "@/lib/ai-fallback";
 
-const summarizer = createAgent({
-  name: "summarizer",
-  system:
-    `You are an expert summarizer. You write readable, concise, simple content. You are given a transcript of a meeting and you need to summarize it.
+const SUMMARIZER_SYSTEM_PROMPT = `You are an expert summarizer. You write readable, concise, simple content. You are given a transcript of a meeting and you need to summarize it.
 Use the following markdown structure for every output:
 
 ### Overview
@@ -26,7 +24,11 @@ Example:
 
 #### Next Section
 - Feature X automatically does Y
-- Mention of integration with Z`.trim(),
+- Mention of integration with Z`.trim();
+
+const summarizer = createAgent({
+  name: "summarizer",
+  system: SUMMARIZER_SYSTEM_PROMPT,
   model: openai({
     model: "chatgpt-4o-mini",
     apiKey: process.env.OPENAI_API_KEY,
@@ -115,15 +117,38 @@ export const meetingsProcessing = inngest.createFunction(
 
       summary = (output[0] as TextMessage).content as string;
     } catch (err) {
-      console.error("Summarization failed", err);
+      console.warn(
+        "[Summarization] Primary agent-kit summarizer failed. Attempting fallback providers (Groq/Gemini/OpenRouter)...",
+        err
+      );
 
-      // 👇 IMPORTANT: mark meeting as failed
-      await db
-        .update(meetings)
-        .set({ status: "cancelled" })
-        .where(eq(meetings.id, event.data.meetingId));
+      try {
+        const fallbackResult = await getAIFallbackCompletion({
+          messages: [
+            { role: "system", content: SUMMARIZER_SYSTEM_PROMPT },
+            {
+              role: "user",
+              content:
+                "Summarize the following transcript: " +
+                JSON.stringify(transcriptWithSpeakers),
+            },
+          ],
+        });
+        summary = fallbackResult.content;
+        console.log(
+          `[Summarization] Successfully generated summary using fallback provider: ${fallbackResult.provider}`
+        );
+      } catch (fallbackErr) {
+        console.error("All summarization attempts failed across all providers:", fallbackErr);
 
-      throw err;
+        // 👇 mark meeting as failed only when all providers have failed
+        await db
+          .update(meetings)
+          .set({ status: "cancelled" })
+          .where(eq(meetings.id, event.data.meetingId));
+
+        throw fallbackErr;
+      }
     }
 
     await step.run("save-summary", async () => {

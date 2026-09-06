@@ -16,8 +16,9 @@ import { and, eq, not } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/stream-chat";
 import { generateAvatarUrl } from "@/lib/avatar";
+import { getAIFallbackCompletion } from "@/lib/ai-fallback";
 
-const openaiClient = new OpenAI({ apiKey: process.env.OPEN_AI_KEY! });
+const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 function verifySignatureWithSDK(body: string, signature: string): boolean {
   return streamVideo.verifyWebhook(body, signature);
@@ -86,14 +87,21 @@ export async function POST(req: NextRequest) {
     }
 
     const call = streamVideo.video.call("default", meetingId);
-    const realtimeClient = await streamVideo.video.connectOpenAi({
-      call,
-      openAiApiKey: process.env.OPENAI_API_KEY!,
-      agentUserId: existingAgent.id,
-    });
-    realtimeClient.updateSession({
-      instructions: existingAgent.instructions,
-    });
+    try {
+      const realtimeClient = await streamVideo.video.connectOpenAi({
+        call,
+        openAiApiKey: process.env.OPENAI_API_KEY!,
+        agentUserId: existingAgent.id,
+      });
+      realtimeClient.updateSession({
+        instructions: existingAgent.instructions,
+      });
+    } catch (realtimeErr) {
+      console.error(
+        "[Stream Video] Failed to connect OpenAI realtime agent (check OpenAI key & quota):",
+        realtimeErr
+      );
+    }
   } else if (eventType === "call.session_participant_left") {
     const event = payload as CallSessionParticipantLeftEvent;
     const meetingId = event.call_cid.split(":")[1];
@@ -210,20 +218,21 @@ export async function POST(req: NextRequest) {
           content: message.text || "",
         }));
 
-      const GPTResponse = await openaiClient.chat.completions.create({
-        messages: [
-          { role: "system", content: instructions },
-          ...previuosMessages,
-          { role: "user", content: text },
-        ],
-        model: "gpt-4o",
-      });
-
-      const GPTResponseText = GPTResponse.choices[0].message.content;
-      if (!GPTResponseText) {
+      let GPTResponseText = "";
+      try {
+        const aiResult = await getAIFallbackCompletion({
+          messages: [
+            { role: "system", content: instructions },
+            ...previuosMessages,
+            { role: "user", content: text },
+          ],
+        });
+        GPTResponseText = aiResult.content;
+      } catch (aiErr) {
+        console.error("AI response generation failed across all providers:", aiErr);
         return NextResponse.json(
-          { error: "No response from GPT" },
-          { status: 400 },
+          { error: "Failed to generate AI response. Please verify your AI API keys." },
+          { status: 500 },
         );
       }
       const avatarUrl = generateAvatarUrl({

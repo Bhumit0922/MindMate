@@ -5,11 +5,28 @@ import { cn } from "@/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import { CircleCheckIcon } from "lucide-react";
 
-const pricingCardVariants = cva("rounded-lg p-4 py-6 w-full", {
+const pricingCardVariants = cva(
+  "rounded-2xl p-6 md:p-8 w-full transition-all duration-200 relative flex flex-col justify-between",
+  {
+    variants: {
+      variant: {
+        default:
+          "bg-card text-card-foreground border border-border shadow-sm hover:shadow-md",
+        highlighted:
+          "bg-gradient-to-br from-[#093C23] via-[#0b2b1e] to-[#051B16] text-white border-2 border-primary/50 shadow-xl shadow-primary/10 ring-1 ring-primary/20",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+);
+
+const pricingCardIconVariants = cva("size-4 shrink-0", {
   variants: {
     variant: {
-      default: "bg-white text-black",
-      highlighted: "bg-lighter-to-br from-[#093C23] to-[#051B16] text-white",
+      default: "text-primary",
+      highlighted: "text-emerald-400",
     },
   },
   defaultVariants: {
@@ -17,32 +34,20 @@ const pricingCardVariants = cva("rounded-lg p-4 py-6 w-full", {
   },
 });
 
-const pricingCardIconVariants = cva("size-5", {
+const pricingCardSecondaryTextVariants = cva("text-muted-foreground", {
   variants: {
     variant: {
-      default: "fill-primary text-white",
-      highlighted: "fill-white text-black",
-    },
-  },
-  defaultVariants: {
-    variant: "default",
-  },
-});
-
-const pricingCardSecondaryTextVariants = cva("text-neutral-700", {
-  variants: {
-    variant: {
-      default: "text-neutral-700",
-      highlighted: "text-neutral-300",
+      default: "text-muted-foreground",
+      highlighted: "text-emerald-100/80",
     },
   },
 });
 
-const pricingCardBadgeVariants = cva("text-black text-xs font-normal p-1", {
+const pricingCardBadgeVariants = cva("text-xs font-semibold px-2.5 py-0.5 rounded-full", {
   variants: {
     variant: {
-      default: "bg-primary/20",
-      highlighted: "bg-[#F5B797]",
+      default: "bg-primary/10 text-primary",
+      highlighted: "bg-emerald-400 text-emerald-950",
     },
   },
   defaultVariants: {
@@ -59,6 +64,7 @@ interface Props extends VariantProps<typeof pricingCardVariants> {
   priceSuffix: string;
   className?: string;
   buttonText: string;
+  disabled?: boolean;
   onClick: () => void;
 }
 
@@ -72,70 +78,112 @@ export const PricingCard = ({
   priceSuffix,
   className,
   buttonText,
+  disabled = false,
   onClick,
 }: Props) => {
   return (
-    <div className={cn(pricingCardVariants({ variant }), className, "border")}>
-      <div className="flex items-end gap-x-4 justify-between">
-        <div className="flex flex-col gap-y-2">
-          <div className="flex items-center gap-x-2">
-            <h6 className="font-medium text-xl">{title}</h6>
-            {badge ? (
-              <Badge className={cn(pricingCardBadgeVariants({ variant }))}>
-                {badge}
-              </Badge>
-            ) : null}
-          </div>
-          <p
-            className={cn(
-              "text-xs",
-              pricingCardSecondaryTextVariants({ variant }),
+    <div className={cn(pricingCardVariants({ variant }), className)}>
+      <div>
+        <div className="flex items-start gap-x-4 justify-between">
+          <div className="flex flex-col gap-y-1.5">
+            <div className="flex items-center gap-x-2">
+              <h3 className="font-semibold text-xl tracking-tight">{title}</h3>
+              {badge ? (
+                <Badge className={cn(pricingCardBadgeVariants({ variant }))}>
+                  {badge}
+                </Badge>
+              ) : null}
+            </div>
+            {description && (
+              <p
+                className={cn(
+                  "text-sm leading-relaxed",
+                  pricingCardSecondaryTextVariants({ variant })
+                )}
+              >
+                {description}
+              </p>
             )}
-          >
-            {description}
-          </p>
+          </div>
         </div>
-        <div className="flex items-end shrink-0 gap-x-0.5">
-          <h4 className="text-3xl font-medium">
+
+        <div className="mt-6 flex items-baseline gap-x-1">
+          <span className="text-4xl font-bold tracking-tight">
             {Intl.NumberFormat("en-US", {
               style: "currency",
               currency: "USD",
               minimumFractionDigits: 0,
             }).format(price)}
-          </h4>
-          <span className={cn(pricingCardSecondaryTextVariants({ variant }))}>
+          </span>
+          <span
+            className={cn(
+              "text-sm font-medium",
+              pricingCardSecondaryTextVariants({ variant })
+            )}
+          >
             {priceSuffix}
           </span>
         </div>
-      </div>
-      <div className="py-6">
-        <Separator className="opacity-10 text-[#5D6B68]" />
-      </div>
-      <Button
-        className="w-full"
-        size="lg"
-        variant={variant === "highlighted" ? "default" : "outline"}
-        onClick={onClick}
-      >
-        {buttonText}
-      </Button>
-      <div className="flex flex-col gap-y-2 mt-6">
-        <p className="font-medium uppercase">Features</p>
-        <ul
+
+        <div className="my-6">
+          <Separator
+            className={cn(
+              "opacity-20",
+              variant === "highlighted" ? "bg-white/30" : "bg-border"
+            )}
+          />
+        </div>
+
+        <Button
           className={cn(
-            "flex flex-col gap-y-2.5",
-            pricingCardSecondaryTextVariants({ variant }),
+            "w-full h-11 font-medium transition-all",
+            variant === "highlighted"
+              ? "bg-emerald-400 text-emerald-950 hover:bg-emerald-300 font-semibold"
+              : ""
           )}
+          size="lg"
+          disabled={disabled}
+          variant={
+            variant === "highlighted"
+              ? "default"
+              : disabled
+              ? "outline"
+              : "default"
+          }
+          onClick={onClick}
         >
-          {features.map((feature, index) => (
-            <li key={index} className="flex items-center gap-x-2.5">
-              <CircleCheckIcon
-                className={cn(pricingCardIconVariants({ variant }))}
-              />
-              {feature}
-            </li>
-          ))}
-        </ul>
+          {buttonText}
+        </Button>
+
+        <div className="flex flex-col gap-y-3 mt-8">
+          <p
+            className={cn(
+              "text-xs font-semibold uppercase tracking-wider",
+              variant === "highlighted"
+                ? "text-emerald-200/90"
+                : "text-muted-foreground"
+            )}
+          >
+            What&apos;s included
+          </p>
+          <ul className="flex flex-col gap-y-3">
+            {features.map((feature, index) => (
+              <li key={index} className="flex items-start gap-x-3 text-sm">
+                <CircleCheckIcon
+                  className={cn("mt-0.5", pricingCardIconVariants({ variant }))}
+                />
+                <span
+                  className={cn(
+                    "leading-normal",
+                    pricingCardSecondaryTextVariants({ variant })
+                  )}
+                >
+                  {feature}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );

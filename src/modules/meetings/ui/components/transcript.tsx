@@ -39,43 +39,55 @@ export const Transcript = ({ meetingId }: Props) => {
         </div>
         <ScrollArea>
           <div className="flex flex-col gap-y-4">
-            {filteredData.map((item) => {
-              return (
-                <div
-                  key={item.start_ts}
-                  className="flex flex-col gap-y-2 hover:bg-muted p-4 rounded-md border"
-                >
-                  <div className="flex gap-x-2 items-center">
-                    <Avatar className="size-6">
-                      <AvatarImage
-                        src={
-                          item.user.image ??
-                          generateAvatarUrl({
-                            seed: item.user.name,
-                            variant: "initials",
-                          })
-                        }
-                        alt="User Avtar"
-                      />
-                    </Avatar>
-                    <p className="text-sm font-medium">{item.user.name}</p>
-                    <p className="text-sm text-blue-500 font-medium">
-                      {format(
-                        new Date(0, 0, 0, 0, 0, 0, item.start_ts),
-                        "mm:ss",
-                      )}
-                    </p>
+            {filteredData.length > 0 ? (
+              filteredData.map((item) => {
+                return (
+                  <div
+                    key={item.start_ts}
+                    className="flex flex-col gap-y-2 hover:bg-muted p-4 rounded-md border"
+                  >
+                    <div className="flex gap-x-2 items-center">
+                      <Avatar className="size-6">
+                        <AvatarImage
+                          src={
+                            item.user.image ??
+                            generateAvatarUrl({
+                              seed: item.user.name,
+                              variant: "initials",
+                            })
+                          }
+                          alt="User Avtar"
+                        />
+                      </Avatar>
+                      <p className="text-sm font-medium">{item.user.name}</p>
+                      <p className="text-sm text-blue-500 font-medium">
+                        {format(
+                          new Date(0, 0, 0, 0, 0, 0, item.start_ts),
+                          "mm:ss",
+                        )}
+                      </p>
+                    </div>
+                    <Highlighter
+                      className="text-sm text-neutral-700"
+                      highlightClassName="bg-yellow-200"
+                      searchWords={[searchQuery]}
+                      autoEscape={true}
+                      textToHighlight={item.text}
+                    />
                   </div>
-                  <Highlighter
-                    className="text-sm text-neutral-700"
-                    highlightClassName="bg-yellow-200"
-                    searchWords={[searchQuery]}
-                    autoEscape={true}
-                    textToHighlight={item.text}
-                  />
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-muted-foreground flex flex-col items-center gap-2">
+                <SearchIcon className="h-8 w-8 text-muted-foreground/30" />
+                <p className="text-sm font-medium">No transcript entries found</p>
+                <p className="text-xs max-w-sm">
+                  {searchQuery
+                    ? "No transcript matching your search query."
+                    : "Transcripts appear here once speech is processed from the call."}
+                </p>
+              </div>
+            )}
           </div>
         </ScrollArea>
       </div>

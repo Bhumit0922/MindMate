@@ -36,7 +36,7 @@ export const CompletedState = ({ data }: Props) => {
                 Summary
               </TabsTrigger>
               <TabsTrigger
-                value="trascript"
+                value="transcript"
                 className="text-muted-foreground rounded-none bg-background data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:text-accent-foreground h-full hover:text-accent-foreground"
               >
                 <FileTextIcon />
@@ -67,12 +67,22 @@ export const CompletedState = ({ data }: Props) => {
           <Transcript meetingId={data.id} />
         </TabsContent>
         <TabsContent value="recording">
-          <div className="bg-white rounded-lg border px-4 py-5">
-            <video
-              src={data.recordingUrl!}
-              className="w-full rounded-lg"
-              controls
-            />
+          <div className="bg-white rounded-lg border px-4 py-8 flex flex-col items-center justify-center">
+            {data.recordingUrl ? (
+              <video
+                src={data.recordingUrl}
+                className="w-full max-h-[500px] rounded-lg"
+                controls
+              />
+            ) : (
+              <div className="text-center py-6 text-muted-foreground flex flex-col items-center gap-2">
+                <FileVideoIcon className="h-10 w-10 text-muted-foreground/30" />
+                <p className="font-medium text-sm">No Recording Available</p>
+                <p className="text-xs max-w-sm">
+                  Stream Video recordings take a few moments to process after a call ends, or recording was not enabled for this session.
+                </p>
+              </div>
+            )}
           </div>
         </TabsContent>
         <TabsContent value="summary">

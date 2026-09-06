@@ -365,27 +365,6 @@ export const meetingsRouter = createTRPCRouter({
         .set({ status: "active", startedAt: existingMeeting.startedAt || new Date() })
         .where(eq(meetings.id, input.id));
 
-      const [existingAgent] = await db
-        .select()
-        .from(agents)
-        .where(eq(agents.id, existingMeeting.agentId));
-
-      if (existingAgent) {
-        try {
-          const call = streamVideo.video.call("default", existingMeeting.id);
-          const realtimeClient = await streamVideo.video.connectOpenAi({
-            call,
-            openAiApiKey: process.env.OPENAI_API_KEY!,
-            agentUserId: existingAgent.id,
-          });
-          realtimeClient.updateSession({
-            instructions: existingAgent.instructions,
-          });
-        } catch (err) {
-          console.warn("[startCall] Stream connectOpenAi warning:", err);
-        }
-      }
-
       return { status: "active" };
     }),
 

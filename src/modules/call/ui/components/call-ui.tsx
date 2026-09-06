@@ -48,6 +48,9 @@ export const CallUI = ({ meetingName }: Props) => {
     if (!call) return;
 
     try {
+      await call.camera.disable();
+      await call.microphone.disable();
+      await call.leave();
       await call.endCall();
     } catch (err) {
       console.error("End call failed", err);

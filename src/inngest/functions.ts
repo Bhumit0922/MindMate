@@ -110,45 +110,48 @@ export const meetingsProcessing = inngest.createFunction(
     let summary = "";
 
     try {
-      const { output } = await summarizer.run(
-        "Summarize the following transcript: " +
-          JSON.stringify(transcriptWithSpeakers),
+      // Use Groq/Gemini via getAIFallbackCompletion (OpenAI is disabled if zero credits)
+      const aiResult = await getAIFallbackCompletion({
+        messages: [
+          { role: "system", content: SUMMARIZER_SYSTEM_PROMPT },
+          {
+            role: "user",
+            content:
+              "Summarize the following transcript: " +
+              JSON.stringify(transcriptWithSpeakers),
+          },
+        ],
+      });
+      summary = aiResult.content;
+      console.log(
+        `[Summarization] Successfully generated summary using ${aiResult.provider} (${aiResult.model})`
       );
-
-      summary = (output[0] as TextMessage).content as string;
     } catch (err) {
       console.warn(
-        "[Summarization] Primary agent-kit summarizer failed. Attempting fallback providers (Groq/Gemini/OpenRouter)...",
+        "[Summarization] Primary fallback completion failed, checking agent-kit summarizer...",
         err
       );
 
-      try {
-        const fallbackResult = await getAIFallbackCompletion({
-          messages: [
-            { role: "system", content: SUMMARIZER_SYSTEM_PROMPT },
-            {
-              role: "user",
-              content:
-                "Summarize the following transcript: " +
-                JSON.stringify(transcriptWithSpeakers),
-            },
-          ],
-        });
-        summary = fallbackResult.content;
-        console.log(
-          `[Summarization] Successfully generated summary using fallback provider: ${fallbackResult.provider}`
-        );
-      } catch (fallbackErr) {
-        console.error("All summarization attempts failed across all providers:", fallbackErr);
-
-        // 👇 mark meeting as failed only when all providers have failed
-        await db
-          .update(meetings)
-          .set({ status: "cancelled" })
-          .where(eq(meetings.id, event.data.meetingId));
-
-        throw fallbackErr;
+      if (process.env.ENABLE_OPENAI === "true" && process.env.OPENAI_API_KEY) {
+        try {
+          const { output } = await summarizer.run(
+            "Summarize the following transcript: " +
+              JSON.stringify(transcriptWithSpeakers),
+          );
+          summary = (output[0] as TextMessage).content as string;
+        } catch (summarizerErr) {
+          console.error("Agent-kit summarizer failed:", summarizerErr);
+        }
       }
+    }
+
+    if (!summary) {
+      await db
+        .update(meetings)
+        .set({ status: "cancelled" })
+        .where(eq(meetings.id, event.data.meetingId));
+
+      throw new Error("Failed to generate meeting summary with available AI providers.");
     }
 
     await step.run("save-summary", async () => {

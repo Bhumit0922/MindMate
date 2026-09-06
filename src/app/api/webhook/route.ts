@@ -18,8 +18,6 @@ import { streamChat } from "@/lib/stream-chat";
 import { generateAvatarUrl } from "@/lib/avatar";
 import { getAIFallbackCompletion } from "@/lib/ai-fallback";
 
-const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-
 function verifySignatureWithSDK(body: string, signature: string): boolean {
   return streamVideo.verifyWebhook(body, signature);
 }
@@ -87,19 +85,25 @@ export async function POST(req: NextRequest) {
     }
 
     const call = streamVideo.video.call("default", meetingId);
-    try {
-      const realtimeClient = await streamVideo.video.connectOpenAi({
-        call,
-        openAiApiKey: process.env.OPENAI_API_KEY!,
-        agentUserId: existingAgent.id,
-      });
-      realtimeClient.updateSession({
-        instructions: existingAgent.instructions,
-      });
-    } catch (realtimeErr) {
-      console.error(
-        "[Stream Video] Failed to connect OpenAI realtime agent (check OpenAI key & quota):",
-        realtimeErr
+    if (process.env.ENABLE_STREAM_OPENAI_REALTIME === "true" && process.env.OPENAI_API_KEY) {
+      try {
+        const realtimeClient = await streamVideo.video.connectOpenAi({
+          call,
+          openAiApiKey: process.env.OPENAI_API_KEY,
+          agentUserId: existingAgent.id,
+        });
+        realtimeClient.updateSession({
+          instructions: existingAgent.instructions,
+        });
+      } catch (realtimeErr) {
+        console.error(
+          "[Stream Video] Failed to connect OpenAI realtime agent:",
+          realtimeErr
+        );
+      }
+    } else {
+      console.log(
+        "[Stream Video] OpenAI Realtime agent bypassed (ENABLE_STREAM_OPENAI_REALTIME is not set). Using Groq / Gemini for AI chat, transcription, and summarization."
       );
     }
   } else if (eventType === "call.session_participant_left") {

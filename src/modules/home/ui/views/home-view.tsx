@@ -73,7 +73,7 @@ export const HomeView = () => {
           <CardContent>
             <div className="text-2xl font-bold text-green-600">Healthy</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Connected to OpenAI API
+              Connected to Groq & Gemini APIs
             </p>
           </CardContent>
         </Card>

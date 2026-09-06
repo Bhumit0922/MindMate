@@ -174,10 +174,10 @@ export async function POST(req: NextRequest) {
     const [existingMeeting] = await db
       .select()
       .from(meetings)
-      .where(and(eq(meetings.id, channelId), eq(meetings.status, "completed")));
+      .where(eq(meetings.id, channelId));
     if (!existingMeeting) {
       return NextResponse.json(
-        { error: "Meeting not found " },
+        { error: "Meeting not found" },
         { status: 404 },
       );
     }
@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
       You are an AI assistant helping the user revisit a recently completed meeting.
       Below is a summary of the meeting, generated from the transcript:
       
-      ${existingMeeting.summary}
+      ${existingMeeting.summary || "Meeting summary is not yet available or call is in progress."}
       
       The following are your original instructions from the live meeting assistant. Please continue to follow these behavioral guidelines as you assist the user:
       
